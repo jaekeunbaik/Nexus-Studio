@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Background Colors */
+  --bg-primary: #0F0E18;
+  --bg-secondary: #12111F;
+  --bg-card: #181626;
+  --bg-card-alt: #1E1C2F;
+
+  /* Text Colors */
+  --text-primary: #E6E6F0;
+  --text-secondary: #C4C3D9;
+
+  /* Brand Colors */
+  --color-primary: #4426FF;
+  --color-primary-hover: #5E6BFF;
+  --color-primary-light: #D6D8FF;
+
+  /* Accent Colors */
+  --color-success: #3BFF9C;
+  --color-warning: #FFD95A;
+  --color-danger: #FF5C5C;
+
+  /* Button Colors */
+  --btn-secondary-bg: #1C1A29;
+  --btn-secondary-border: #5E6BFF;
+
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+/* Glass Panel with Nexus Style */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(94, 107, 255, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  border-radius: 16px;
+}
+
+/* Primary Button - Nexus Purple */
+.btn-primary {
+  background: var(--color-primary);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 16px rgba(68, 38, 255, 0.4);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 14px;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 0 12px var(--color-primary-hover), 0 6px 24px rgba(68, 38, 255, 0.6);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: 2px solid var(--btn-secondary-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 14px;
+}
+
+.btn-secondary:hover {
+  background: rgba(94, 107, 255, 0.2);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 0 12px rgba(94, 107, 255, 0.5);
+}
+
+/* Remove default button styles */
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Card Style with Neon Glow */
+.card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(94, 107, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  border-color: rgba(94, 107, 255, 0.4);
+  box-shadow: 0 0 12px rgba(94, 107, 255, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-4px);
+}
+
+/* Neon Glow Effect */
+.neon-glow {
+  box-shadow: 0 0 12px var(--color-primary-hover);
+}
+
+/* Input Focus Glow */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary-hover);
+  box-shadow: 0 0 12px rgba(94, 107, 255, 0.5);
+}
