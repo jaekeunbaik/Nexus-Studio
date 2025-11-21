@@ -5,13 +5,18 @@ import cors from 'cors';
 import { GameEngine, ROLES } from './GameEngine.js';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: "*",
+    credentials: true
+}));
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: "*", // Allow all for dev
-        methods: ["GET", "POST"]
+        origin: "*",
+        methods: ["GET", "POST"],
+        credentials: true,
+        allowedHeaders: ["*"]
     }
 });
 
