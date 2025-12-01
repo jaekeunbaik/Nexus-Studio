@@ -1,5 +1,9 @@
 <template>
-  <div class="min-h-screen p-8">
+  <div class="min-h-screen p-8 bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] flex items-center justify-center">
+    <!-- Animated Background Glow -->
+    <div class="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#7B2FFF] opacity-20 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#00D4FF] opacity-15 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+    
     <!-- Nickname Input Modal -->
     <NicknameInput 
       v-if="showNicknameInput"
@@ -7,21 +11,21 @@
     />
 
     <!-- Room Lobby -->
-    <div v-else class="max-w-4xl mx-auto">
-      <header class="glass-panel p-8 mb-8">
+    <div v-else class="max-w-4xl mx-auto w-full relative z-10">
+      <header class="glass-panel p-8 mb-8 border-2 border-[#7B2FFF]/40 shadow-[0_0_30px_rgba(123,47,255,0.3)]">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-4">
-            <div class="h-12 w-1 bg-gradient-to-b from-[#4426FF] to-[#5E6BFF] neon-glow"></div>
+            <div class="h-12 w-1.5 bg-gradient-to-b from-[#7B2FFF] to-[#00D4FF] shadow-[0_0_20px_rgba(123,47,255,0.8)]"></div>
             <div>
-              <h1 class="text-4xl font-black text-white">{{ uiStore.t('roomLobby') }}</h1>
-              <p class="text-[#C4C3D9] font-mono text-sm mt-1">{{ uiStore.t('room') }} ID: <span class="font-bold text-[#4426FF]">{{ roomId }}</span></p>
+              <h1 class="text-4xl font-black text-white" style="text-shadow: 0 0 20px rgba(123, 47, 255, 0.6)">{{ uiStore.t('roomLobby') }}</h1>
+              <p class="text-[#E0E7FF] font-mono text-sm mt-1">{{ uiStore.t('room') }} ID: <span class="font-bold text-[#00D4FF]">{{ roomId }}</span></p>
             </div>
           </div>
           
           <!-- QR Code Button -->
           <button 
             @click="showQrModal = true"
-            class="p-3 rounded-xl bg-[#1E1C2F] border border-[#5E6BFF]/30 hover:border-[#5E6BFF] hover:neon-glow transition-all group"
+            class="p-3 rounded-xl bg-[#7B2FFF]/20 border-2 border-[#7B2FFF]/50 hover:border-[#00D4FF] hover:shadow-[0_0_20px_rgba(0,212,255,0.6)] transition-all group"
             title="Show QR Code"
           >
             <span class="text-2xl group-hover:scale-110 transition-transform block">📱</span>
@@ -30,37 +34,37 @@
       </header>
 
       <!-- Players List -->
-      <div class="glass-panel p-6 mb-8">
-        <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+      <div class="glass-panel p-6 mb-8 border-2 border-[#00D4FF]/30 shadow-[0_0_25px_rgba(0,212,255,0.2)]">
+        <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2" style="text-shadow: 0 0 15px rgba(0, 212, 255, 0.5)">
           <span>{{ uiStore.t('players') }}</span>
-          <span class="text-sm font-normal text-[#C4C3D9]">({{ players.length }})</span>
+          <span class="text-sm font-normal text-[#E0E7FF]">({{ players.length }})</span>
         </h2>
         <div class="flex flex-wrap justify-center gap-4">
           <div 
             v-for="player in players" 
             :key="player.id"
-            class="w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.33%-0.6rem)] bg-[#1E1C2F] rounded-r-xl border-l-4 border-l-[#4426FF] pl-6 pr-4 py-4 border-y border-r border-[#5E6BFF]/20 hover:border-[#5E6BFF] transition-all hover:neon-glow"
+            class="w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.33%-0.6rem)] bg-[#1E1C2F]/80 rounded-xl border-l-4 border-l-[#00D4FF] pl-6 pr-4 py-4 border border-[#7B2FFF]/30 hover:border-[#00D4FF] hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] transition-all"
             style="display: flex; flex-direction: row; align-items: center; gap: 16px;"
           >
-            <div class="w-12 h-12 flex-shrink-0 rounded-full bg-gradient-to-br from-[#4426FF] to-[#5E6BFF] flex items-center justify-center text-white font-bold text-lg shadow-lg">
+            <div class="w-12 h-12 flex-shrink-0 rounded-full bg-gradient-to-br from-[#7B2FFF] to-[#00D4FF] flex items-center justify-center text-white font-bold text-lg shadow-[0_0_15px_rgba(123,47,255,0.6)]">
               {{ player.nickname[0].toUpperCase() }}
             </div>
             <div class="flex-1 min-w-0 overflow-hidden" style="display: flex; flex-direction: row; align-items: center; gap: 8px;">
               <p class="font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis">{{ player.nickname }}</p>
-              <p v-if="player.isHost" class="text-xs text-[#FFD95A] font-medium whitespace-nowrap flex-shrink-0">👑 {{ uiStore.t('host') || 'Host' }}</p>
+              <p v-if="player.isHost" class="text-xs text-[#FFD700] font-medium whitespace-nowrap flex-shrink-0">👑 {{ uiStore.t('host') || 'Host' }}</p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Game Info (Host Only) -->
-      <div v-if="isHost" class="glass-panel p-6 mb-8">
-        <h2 class="text-2xl font-bold text-white mb-4">게임 정보</h2>
+      <div v-if="isHost" class="glass-panel p-6 mb-8 border-2 border-[#FF006E]/30 shadow-[0_0_25px_rgba(255,0,110,0.2)]">
+        <h2 class="text-2xl font-bold text-white mb-4" style="text-shadow: 0 0 15px rgba(255, 0, 110, 0.5)">게임 정보</h2>
         
         <!-- Game Description -->
-        <div class="p-4 bg-[#1E1C2F] rounded-xl border border-[#5E6BFF]/30">
-          <p class="text-[#C4C3D9] text-sm leading-relaxed">
-            <span class="font-bold text-[#4426FF]">🎭 양치기 소년 (Shepherd & Wolf)</span><br/>
+        <div class="p-4 bg-[#1E1C2F]/80 rounded-xl border-2 border-[#FF006E]/40">
+          <p class="text-[#E0E7FF] text-sm leading-relaxed">
+            <span class="font-bold text-[#FF006E]">🎭 양치기 소년 (Shepherd & Wolf)</span><br/>
             8가지 역할 (양치기, 양, 늑대, 거북이, 고슴도치, 부엉이, 꿀벌, 벌꿀오소리)<br/>
             밤/낮 페이즈, 역할별 특수 능력, 5라운드 진행
           </p>
@@ -72,16 +76,16 @@
         <button 
           @click="startGame"
           :disabled="players.length < 8"
-          class="btn-primary text-lg px-16 py-5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          class="bg-gradient-to-r from-[#7B2FFF] via-[#00D4FF] to-[#7B2FFF] text-white text-lg px-16 py-5 rounded-full font-bold shadow-2xl hover:shadow-[0_0_40px_rgba(123,47,255,0.8)] hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 animate-gradient bg-[length:200%_auto]"
         >
           {{ players.length < 8 ? `8명이 모여야 시작할 수 있습니다 (${players.length}/8)` : uiStore.t('startGame') }}
         </button>
       </div>
 
       <!-- Waiting Message (Non-Host) -->
-      <div v-else class="text-center glass-panel p-8">
+      <div v-else class="text-center glass-panel p-8 border-2 border-[#7B2FFF]/30">
         <div class="animate-pulse">
-          <p class="text-[#C4C3D9] text-lg">{{ uiStore.t('waitingHost') }}</p>
+          <p class="text-[#E0E7FF] text-lg">{{ uiStore.t('waitingHost') }}</p>
         </div>
       </div>
     </div>
@@ -231,3 +235,20 @@ onUnmounted(() => {
   socket.off('roomClosed');
 });
 </script>
+
+<style scoped>
+@keyframes pulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
+}
+</style>

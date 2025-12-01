@@ -45,25 +45,31 @@ export class MafiaGameEngine {
         const shuffledRoles = [...roles].sort(() => Math.random() - 0.5);
 
         this.players = players.map((p, index) => ({
-        });
+            id: p.id,
+            nickname: p.nickname,
+            role: shuffledRoles[index % shuffledRoles.length],
+            alive: true,
+            location: 'Lobby',
+            protected: false,
+            lastSelfProtect: 0
+        }));
         this.scheduledMoves = {}; // Reset moves
-    }
 
         return {
-    phase: this.phase,
-    round: this.round
-};
+            phase: this.phase,
+            round: this.round
+        };
     }
 
-/**
- * Get game state
- */
-getGameState() {
-    return {
-        round: this.round,
-        phase: this.phase,
-        players: this.getPublicPlayerData(),
-        locationCounts: this.getLocationCounts()
-    };
-}
+    /**
+     * Get game state
+     */
+    getGameState() {
+        return {
+            round: this.round,
+            phase: this.phase,
+            players: this.getPublicPlayerData(),
+            locationCounts: this.getLocationCounts()
+        };
+    }
 }
