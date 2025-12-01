@@ -9,6 +9,9 @@ export const useRoomStore = defineStore('room', () => {
     const round = ref(1);
     const isHost = ref(false);
 
+    const timer = ref(0);
+    let timerInterval = null;
+
     function setRoom(id, type) {
         roomId.value = id;
         gameType.value = type;
@@ -40,6 +43,23 @@ export const useRoomStore = defineStore('room', () => {
         isHost.value = val;
     }
 
+    function startTimer(seconds) {
+        if (timerInterval) clearInterval(timerInterval);
+        timer.value = seconds;
+        timerInterval = setInterval(() => {
+            if (timer.value > 0) {
+                timer.value--;
+            } else {
+                clearInterval(timerInterval);
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timer.value = 0;
+    }
+
     return {
         roomId,
         gameType,
@@ -47,12 +67,15 @@ export const useRoomStore = defineStore('room', () => {
         phase,
         round,
         isHost,
+        timer,
         setRoom,
         setPhase,
         setPlayers,
         addPlayer,
         removePlayer,
         setRound,
-        setIsHost
+        setIsHost,
+        startTimer,
+        stopTimer
     };
 });

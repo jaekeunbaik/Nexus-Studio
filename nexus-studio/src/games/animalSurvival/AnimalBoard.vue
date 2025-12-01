@@ -71,7 +71,7 @@ const gameStore = useGameStore();
 const playerStore = usePlayerStore();
 const roomStore = useRoomStore();
 
-const locations = ['Forest', 'Field', 'River', 'Sky'];
+const locations = ['Lobby', 'Forest', 'Field', 'River', 'Sky'];
 
 const myLocation = computed(() => playerStore.location);
 const myPlayerId = computed(() => playerStore.playerId);
@@ -79,6 +79,7 @@ const locationCounts = computed(() => gameStore.locationCounts);
 
 function getLocationClass(loc) {
   const classes = {
+    Lobby: 'location-lobby',
     Forest: 'location-forest',
     Field: 'location-field',
     River: 'location-river',
@@ -89,6 +90,7 @@ function getLocationClass(loc) {
 
 function getLocationEmoji(loc) {
   const emojis = {
+    Lobby: '🏰',
     Forest: '🌲',
     Field: '🌾',
     River: '🌊',
@@ -99,6 +101,7 @@ function getLocationEmoji(loc) {
 
 function getLocationNameKo(loc) {
   const names = {
+    Lobby: '로비',
     Forest: '숲',
     Field: '들판',
     River: '강',
@@ -192,6 +195,11 @@ function selectLocation(loc) {
   border-color: #FFD700;
   box-shadow: 0 8px 32px rgba(255, 215, 0, 0.4);
   transform: translateY(-4px) scale(1.02);
+}
+
+.location-lobby {
+  background: linear-gradient(135deg, #A0AEC0 0%, #718096 100%);
+  color: white;
 }
 
 .location-forest {

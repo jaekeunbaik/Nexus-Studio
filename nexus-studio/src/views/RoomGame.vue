@@ -17,9 +17,23 @@
               <span class="stat-icon">{{ phaseIcon }}</span>
               <span class="stat-value">{{ phaseName }}</span>
             </div>
+            <div class="stat-badge timer-badge" :class="{ 'timer-urgent': timer <= 10 }">
+              <span class="stat-icon">⏳</span>
+              <span class="stat-value">{{ formattedTimer }}</span>
+            </div>
+            <div class="stat-badge location-badge" v-if="myLocation">
+              <span class="stat-icon">📍</span>
+              <span class="stat-value">{{ myLocationName }}</span>
+            </div>
           </div>
         </div>
       </header>
+
+      <RoleDescriptionModal 
+        :isOpen="showRoleModal" 
+        :role="myRole" 
+        @close="closeRoleModal" 
+      />
 
       <!-- Main Content -->
       <div class="game-content">
@@ -28,6 +42,19 @@
           <AnimalBoard 
             v-model:selectedLocation="selectedLocation"
           />
+          
+          <!-- Move Button (Night Only) -->
+          <div v-if="phase === 'night'" class="move-controls">
+            <button 
+              class="move-btn" 
+              :disabled="!selectedLocation || isMoving"
+              @click="handleMove"
+            >
+              <span class="btn-icon">🏃</span>
+              <span class="btn-text">{{ selectedLocation ? getLocationNameKo(selectedLocation) + '(으)로 이동 예약' : '이동할 지역 선택' }}</span>
+            </button>
+            <p class="move-hint">밤이 끝나면 선택한 지역으로 이동합니다.</p>
+          </div>
         </div>
 
         <!-- Sidebar -->
@@ -65,6 +92,7 @@ import { usePlayerStore } from '@/stores/playerStore';
 import { useSocket } from '@/composables/useSocket';
 import AnimalBoard from '@/games/animalSurvival/AnimalBoard.vue';
 import MafiaUI from '@/games/animalSurvival/MafiaUI.vue';
+import RoleDescriptionModal from '@/games/animalSurvival/RoleDescriptionModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -78,8 +106,34 @@ const players = computed(() => roomStore.players);
 const phase = computed(() => roomStore.phase);
 const logs = computed(() => gameStore.logs);
 const gameType = computed(() => gameStore.gameType);
+const timer = computed(() => roomStore.timer);
+const myRole = computed(() => playerStore.role);
+const myLocation = computed(() => playerStore.location);
 
+const showRoleModal = ref(false);
 const selectedLocation = ref(null);
+const isMoving = ref(false);
+
+const formattedTimer = computed(() => {
+  const m = Math.floor(timer.value / 60);
+  const s = timer.value % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+});
+
+const myLocationName = computed(() => {
+  const names = {
+    Lobby: '로비',
+    Forest: '숲',
+    Field: '들판',
+    River: '강',
+    Sky: '하늘'
+  };
+  return names[myLocation.value] || myLocation.value;
+});
+
+function closeRoleModal() {
+  showRoleModal.value = false;
+}
 
 const phaseClass = computed(() => {
   if (phase.value === 'night') return 'phase-night';
@@ -103,6 +157,7 @@ const phaseName = computed(() => {
 function handleMove() {
   if (!selectedLocation.value) return;
   
+  isMoving.value = true;
   socket.emit('mafiaMoveLocation', { 
     roomId: roomId.value, 
     location: selectedLocation.value 
@@ -142,9 +197,15 @@ onMounted(() => {
   socket.on('gameStarted', ({ gameType: type }) => {
     gameStore.setGameType(type);
     playerStore.setActionSubmitted(false);
+    roomStore.startTimer(60); // Start 60s timer
   });
 
   socket.on('mafiaGameStateUpdate', (state) => {
+    // Check if phase changed to reset timer
+    if (roomStore.phase !== state.phase) {
+      roomStore.startTimer(60); // Reset timer on phase change
+    }
+
     roomStore.setPhase(state.phase);
     roomStore.setRound(state.round);
     roomStore.setPlayers(state.players);
@@ -161,10 +222,19 @@ onMounted(() => {
   });
 
   socket.on('mafiaPrivateData', (data) => {
+    console.log('Received mafiaPrivateData:', data);
     if (data) {
+      // Update store first
+      const isNewRole = !playerStore.role;
       playerStore.setRole(data.role);
       playerStore.setScanResults(data.scanResults || []);
       playerStore.setWolfDetected(data.wolfDetected || false);
+
+      // Then show modal if it's a new role assignment
+      if (isNewRole && data.role) {
+        console.log('Opening role modal for role:', data.role);
+        showRoleModal.value = true;
+      }
     }
   });
 
@@ -184,6 +254,18 @@ onMounted(() => {
   socket.on('mafiaGameOver', (data) => {
     router.push(`/result/${roomId.value}`);
   });
+
+  socket.on('mafiaMoveSuccess', ({ location }) => {
+    isMoving.value = false;
+    // Show success feedback (maybe toast or just console for now)
+    console.log('Move scheduled to:', location);
+    alert(`다음 날 ${getLocationNameKo(location)}로 이동합니다.`);
+  });
+
+  socket.on('mafiaMoveError', ({ error }) => {
+    isMoving.value = false;
+    alert(error);
+  });
 });
 
 onUnmounted(() => {
@@ -196,7 +278,20 @@ onUnmounted(() => {
   socket.off('mafiaGameLogs');
   socket.off('mafiaActionResult');
   socket.off('mafiaGameOver');
+  socket.off('mafiaMoveSuccess');
+  socket.off('mafiaMoveError');
 });
+
+function getLocationNameKo(loc) {
+  const names = {
+    Lobby: '로비',
+    Forest: '숲',
+    Field: '들판',
+    River: '강',
+    Sky: '하늘'
+  };
+  return names[loc] || loc;
+}
 </script>
 
 <style scoped>
@@ -283,6 +378,36 @@ onUnmounted(() => {
 .phase-badge.phase-day {
   background: linear-gradient(135deg, #FFEB3B 0%, #FFA000 100%);
   border-color: #FFD700;
+}
+
+.timer-badge {
+  background: linear-gradient(135deg, #FFF 0%, #F0F0F0 100%);
+  border-color: #DDD;
+}
+
+.timer-urgent {
+  background: linear-gradient(135deg, #FFE5E5 0%, #FFD0D0 100%);
+  border-color: #FF6B6B;
+  animation: pulse 1s infinite;
+}
+
+.timer-urgent .stat-value {
+  color: #D32F2F;
+}
+
+.location-badge {
+  background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+  border-color: #90CAF9;
+}
+
+.location-badge .stat-value {
+  color: #1976D2;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .game-content {
@@ -387,5 +512,48 @@ onUnmounted(() => {
   .board-section {
     padding: 16px;
   }
+}
+
+.move-controls {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.move-btn {
+  background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+  width: 100%;
+  justify-content: center;
+}
+
+.move-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(74, 144, 226, 0.4);
+}
+
+.move-btn:disabled {
+  background: #CCC;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.move-hint {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
 }
 </style>

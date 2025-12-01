@@ -256,6 +256,7 @@ function getRoleNameKo(role) {
 
 function getLocationNameKo(location) {
   const names = {
+    Lobby: '로비',
     Forest: '숲',
     Field: '들판',
     River: '강',

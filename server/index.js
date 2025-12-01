@@ -151,18 +151,25 @@ io.on('connection', (socket) => {
         const room = rooms[roomId];
         if (room) {
             socket.join(roomId);
-            // If player exists, update their socket ID? 
-            // For now, just send state. If they are new (refresh), they might need to be added?
-            // If game is in progress, we can't easily add them as a player with a role unless we persist player sessions.
-            // For this MVP, we'll just send the current state.
 
-            // Send state only to the rejoining client
-            socket.emit('gameStateUpdate', {
-                phase: room.phase,
-                round: room.gameEngine ? room.gameEngine.round : 1,
-                players: room.players,
-                locationMap: room.gameEngine ? getLocationMap(room.players) : {}
-            });
+            if (room.gameType === 'mafiaGame' && room.gameEngine) {
+                // Send Mafia Game State
+                socket.emit('mafiaGameStateUpdate', room.gameEngine.getGameState());
+
+                // Send Private Data (Role, etc.)
+                const privateData = room.gameEngine.getPrivatePlayerData(socket.id);
+                if (privateData) {
+                    socket.emit('mafiaPrivateData', privateData);
+                }
+            } else {
+                // Legacy Game State
+                socket.emit('gameStateUpdate', {
+                    phase: room.phase,
+                    round: room.gameEngine ? room.gameEngine.round : 1,
+                    players: room.players,
+                    locationMap: room.gameEngine ? getLocationMap(room.players) : {}
+                });
+            }
         }
     });
 
@@ -199,9 +206,17 @@ io.on('connection', (socket) => {
         const room = rooms[roomId];
         if (!room || room.gameType !== 'mafiaGame') return;
 
-        const result = room.gameEngine.movePlayer(socket.id, location);
-        if (result.success) {
-            io.to(roomId).emit('mafiaGameStateUpdate', room.gameEngine.getGameState());
+        // Only allow movement scheduling during Night
+        if (room.gameEngine.phase === PHASES.NIGHT) {
+            const result = room.gameEngine.scheduleMove(socket.id, location);
+            if (result.success) {
+                // We don't broadcast state update for secret moves, but we might want to acknowledge to the user
+                socket.emit('mafiaMoveSuccess', { location });
+            } else {
+                socket.emit('mafiaMoveError', { error: result.error });
+            }
+        } else {
+            socket.emit('mafiaMoveError', { error: 'Movement is only allowed at Night' });
         }
     });
 
