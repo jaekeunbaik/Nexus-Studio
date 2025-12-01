@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { GameEngine, ROLES } from './GameEngine.js';
+import { MafiaGameEngine, ROLES as MAFIA_ROLES, PHASES } from './MafiaGameEngine.js';
 
 const app = express();
 app.use(cors({
@@ -18,7 +19,7 @@ const io = new Server(httpServer, {
 });
 
 // In-memory storage
-const rooms = {}; // roomId -> { id, name, players: [], gameEngine: instance, phase: 'lobby', moves: {}, persistent: boolean }
+const rooms = {}; // roomId -> { id, name, players: [], gameEngine: instance, gameType: 'animalSurvival' | 'mafiaGame', phase: 'lobby', moves: {}, persistent: boolean }
 
 // Admin Endpoints
 app.use(express.json());
@@ -106,33 +107,31 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on('startGame', ({ roomId, gameType }) => {
+    socket.on('startGame', ({ roomId }) => {
         const room = rooms[roomId];
         if (!room) return;
 
-        // Reset game state if needed
-        room.gameEngine = new GameEngine(); // Fresh engine
+        // Always use Mafia Game (Shepherd & Wolf)
+        const gameType = 'mafiaGame';
+        room.gameType = gameType;
 
-        // Assign Roles
-        const roles = Object.values(ROLES);
-        const shuffledRoles = roles.sort(() => 0.5 - Math.random());
+        // Initialize Mafia Game
+        room.gameEngine = new MafiaGameEngine();
+        const initResult = room.gameEngine.initGame(room.players);
+        room.phase = 'night';
 
-        room.players.forEach((p, i) => {
-            p.role = shuffledRoles[i % shuffledRoles.length];
-            p.alive = true;
-            p.hunger = 0;
-            p.location = 'Forest';
+        io.to(roomId).emit('gameStarted', { gameType });
+        io.to(roomId).emit('mafiaGameStateUpdate', {
+            phase: initResult.phase,
+            round: initResult.round,
+            players: initResult.players,
+            locationCounts: room.gameEngine.getLocationCounts()
         });
 
-        room.gameEngine.initRound(room.players);
-        room.phase = 'moving';
-
-        io.to(roomId).emit('gameStarted', { gameType }); // Tell clients which game started
-        io.to(roomId).emit('gameStateUpdate', {
-            phase: room.phase,
-            round: room.gameEngine.round,
-            players: room.players,
-            locationMap: getLocationMap(room.players)
+        // Send private role info to each player
+        room.players.forEach(p => {
+            const privateData = room.gameEngine.getPrivatePlayerData(p.id);
+            io.to(p.id).emit('mafiaPrivateData', privateData);
         });
     });
 
@@ -165,6 +164,68 @@ io.on('connection', (socket) => {
                 locationMap: room.gameEngine ? getLocationMap(room.players) : {}
             });
         }
+    });
+
+    // Mafia Game Events
+    socket.on('mafiaSubmitNightAction', ({ roomId, actionType, targetId }) => {
+        const room = rooms[roomId];
+        if (!room || room.gameType !== 'mafiaGame') return;
+
+        const result = room.gameEngine.submitNightAction(socket.id, actionType, targetId);
+        socket.emit('mafiaActionResult', result);
+
+        // Check if all alive players have submitted actions
+        const alivePlayers = room.players.filter(p => p.alive);
+        const nightActionCount = Object.keys(room.gameEngine.nightActions).length;
+
+        // Auto-advance if all players with night actions have submitted
+        // (Not all roles have night actions)
+        if (nightActionCount >= alivePlayers.filter(p =>
+            [MAFIA_ROLES.WOLF, MAFIA_ROLES.TURTLE, MAFIA_ROLES.OWL, MAFIA_ROLES.HONEY_BADGER].includes(p.role)
+        ).length) {
+            processMafiaNight(roomId);
+        }
+    });
+
+    socket.on('mafiaSubmitDayAction', ({ roomId, actionType, targetId }) => {
+        const room = rooms[roomId];
+        if (!room || room.gameType !== 'mafiaGame') return;
+
+        const result = room.gameEngine.submitDayAction(socket.id, actionType, targetId);
+        socket.emit('mafiaActionResult', result);
+    });
+
+    socket.on('mafiaMoveLocation', ({ roomId, location }) => {
+        const room = rooms[roomId];
+        if (!room || room.gameType !== 'mafiaGame') return;
+
+        const result = room.gameEngine.movePlayer(socket.id, location);
+        if (result.success) {
+            io.to(roomId).emit('mafiaGameStateUpdate', room.gameEngine.getGameState());
+        }
+    });
+
+    socket.on('mafiaAdvancePhase', ({ roomId }) => {
+        const room = rooms[roomId];
+        if (!room || room.gameType !== 'mafiaGame') return;
+
+        // Check if host
+        const player = room.players.find(p => p.id === socket.id);
+        if (!player || !player.isHost) return;
+
+        if (room.gameEngine.phase === PHASES.NIGHT) {
+            processMafiaNight(roomId);
+        } else {
+            processMafiaDay(roomId);
+        }
+    });
+
+    socket.on('mafiaGetPrivateData', ({ roomId }) => {
+        const room = rooms[roomId];
+        if (!room || room.gameType !== 'mafiaGame') return;
+
+        const privateData = room.gameEngine.getPrivatePlayerData(socket.id);
+        socket.emit('mafiaPrivateData', privateData);
     });
 
     socket.on('disconnect', () => {
@@ -232,6 +293,103 @@ function getLocationMap(players) {
         }
     });
     return map;
+}
+
+// Mafia Game Processing Functions
+function processMafiaNight(roomId) {
+    const room = rooms[roomId];
+    if (!room || room.gameType !== 'mafiaGame') return;
+
+    const engine = room.gameEngine;
+
+    // Process night actions
+    const result = engine.processNightActions();
+
+    // Send logs
+    if (result.logs.length > 0) {
+        io.to(roomId).emit('mafiaGameLogs', result.logs);
+    }
+
+    // Check win conditions
+    const winCheck = engine.checkWinConditions();
+
+    if (winCheck.gameOver) {
+        io.to(roomId).emit('mafiaGameOver', {
+            winners: winCheck.winners,
+            allPlayers: engine.players.map(p => ({
+                id: p.id,
+                nickname: p.nickname,
+                role: p.role,
+                alive: p.alive
+            }))
+        });
+        room.phase = 'result';
+    } else {
+        // Advance to day phase
+        engine.advancePhase();
+        room.phase = 'day';
+
+        io.to(roomId).emit('mafiaGameStateUpdate', {
+            phase: engine.phase,
+            round: engine.round,
+            players: engine.getPublicPlayerData(),
+            locationCounts: engine.getLocationCounts()
+        });
+
+        // Update private data for players (scan results, wolf detection)
+        room.players.forEach(p => {
+            const privateData = engine.getPrivatePlayerData(p.id);
+            io.to(p.id).emit('mafiaPrivateData', privateData);
+        });
+    }
+}
+
+function processMafiaDay(roomId) {
+    const room = rooms[roomId];
+    if (!room || room.gameType !== 'mafiaGame') return;
+
+    const engine = room.gameEngine;
+
+    // Process day actions
+    const result = engine.processDayActions();
+
+    // Send logs
+    if (result.logs.length > 0) {
+        io.to(roomId).emit('mafiaGameLogs', result.logs);
+    }
+
+    // Check win conditions
+    const winCheck = engine.checkWinConditions();
+
+    if (winCheck.gameOver) {
+        io.to(roomId).emit('mafiaGameOver', {
+            winners: winCheck.winners,
+            allPlayers: engine.players.map(p => ({
+                id: p.id,
+                nickname: p.nickname,
+                role: p.role,
+                alive: p.alive
+            }))
+        });
+        room.phase = 'result';
+    } else {
+        // Advance to night phase
+        engine.advancePhase();
+        room.phase = 'night';
+
+        io.to(roomId).emit('mafiaGameStateUpdate', {
+            phase: engine.phase,
+            round: engine.round,
+            players: engine.getPublicPlayerData(),
+            locationCounts: engine.getLocationCounts()
+        });
+
+        // Update private data for players
+        room.players.forEach(p => {
+            const privateData = engine.getPrivatePlayerData(p.id);
+            io.to(p.id).emit('mafiaPrivateData', privateData);
+        });
+    }
 }
 
 const PORT = process.env.PORT || 3000;

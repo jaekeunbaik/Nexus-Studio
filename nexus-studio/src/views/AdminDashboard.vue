@@ -74,7 +74,7 @@ const password = ref('');
 const rooms = ref([]);
 const newRoomName = ref('');
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3000`;
 
 function login() {
   if (password.value === 'admin123') {

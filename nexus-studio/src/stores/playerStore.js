@@ -9,6 +9,12 @@ export const usePlayerStore = defineStore('player', () => {
     const hunger = ref(0);
     const location = ref(null); // Forest, Field, River, Sky
 
+    // Mafia game specific
+    const scanResults = ref([]); // For owl
+    const wolfDetected = ref(false); // For shepherd boy
+    const isProtected = ref(false); // For turtle protection
+    const actionSubmitted = ref(false); // Track if action submitted this phase
+
     function setPlayerInfo(id, name) {
         playerId.value = id;
         nickname.value = name;
@@ -30,11 +36,31 @@ export const usePlayerStore = defineStore('player', () => {
         location.value = loc;
     }
 
+    function setScanResults(results) {
+        scanResults.value = results;
+    }
+
+    function setWolfDetected(detected) {
+        wolfDetected.value = detected;
+    }
+
+    function setProtected(protectedStatus) {
+        isProtected.value = protectedStatus;
+    }
+
+    function setActionSubmitted(submitted) {
+        actionSubmitted.value = submitted;
+    }
+
     function reset() {
         role.value = null;
         alive.value = true;
         hunger.value = 0;
         location.value = null;
+        scanResults.value = [];
+        wolfDetected.value = false;
+        isProtected.value = false;
+        actionSubmitted.value = false;
     }
 
     return {
@@ -44,11 +70,19 @@ export const usePlayerStore = defineStore('player', () => {
         alive,
         hunger,
         location,
+        scanResults,
+        wolfDetected,
+        isProtected,
+        actionSubmitted,
         setPlayerInfo,
         setRole,
         setAlive,
         setHunger,
         setLocation,
+        setScanResults,
+        setWolfDetected,
+        setProtected,
+        setActionSubmitted,
         reset
     };
 });

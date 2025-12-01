@@ -18,7 +18,7 @@
           <div class="absolute inset-0 bg-[#4426FF] opacity-10 group-hover:opacity-20 transition-opacity"></div>
           <span class="text-6xl relative z-10 group-hover:scale-110 transition-transform">🦁</span>
         </div>
-        <h2 class="text-2xl font-bold mb-3 text-white">Animal Survival</h2>
+        <h2 class="text-2xl font-bold mb-3 text-white">Shepherd & Wolf</h2>
         <p class="text-[#C4C3D9] mb-6 leading-relaxed text-sm">
           {{ uiStore.t('animalSurvivalDesc') }}
         </p>
