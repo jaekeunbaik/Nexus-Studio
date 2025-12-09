@@ -256,11 +256,10 @@ function getRoleNameKo(role) {
 
 function getLocationNameKo(location) {
   const names = {
-    Lobby: '로비',
-    Forest: '숲',
-    Field: '들판',
+    Sky: '하늘',
     River: '강',
-    Sky: '하늘'
+    Mountain: '산',
+    DeathCamp: '사망자 수용소'
   };
   return names[location] || location;
 }

@@ -122,11 +122,10 @@ const formattedTimer = computed(() => {
 
 const myLocationName = computed(() => {
   const names = {
-    Lobby: '로비',
-    Forest: '숲',
-    Field: '들판',
+    Sky: '하늘',
     River: '강',
-    Sky: '하늘'
+    Mountain: '산',
+    DeathCamp: '사망자 수용소'
   };
   return names[myLocation.value] || myLocation.value;
 });
@@ -284,11 +283,10 @@ onUnmounted(() => {
 
 function getLocationNameKo(loc) {
   const names = {
-    Lobby: '로비',
-    Forest: '숲',
-    Field: '들판',
+    Sky: '하늘',
     River: '강',
-    Sky: '하늘'
+    Mountain: '산',
+    DeathCamp: '사망자 수용소'
   };
   return names[loc] || loc;
 }

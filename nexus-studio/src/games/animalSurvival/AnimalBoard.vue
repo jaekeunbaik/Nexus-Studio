@@ -8,7 +8,8 @@
         :class="[
           getLocationClass(loc),
           { 'is-selected': selectedLocation === loc },
-          { 'is-largest': isLargestLocation(loc) }
+          { 'is-largest': isLargestLocation(loc) },
+          { 'is-death-camp': loc === 'DeathCamp' }
         ]"
         @click="selectLocation(loc)"
       >
@@ -20,7 +21,7 @@
         </div>
 
         <!-- Largest Location Badge -->
-        <div v-if="isLargestLocation(loc)" class="largest-badge">
+        <div v-if="isLargestLocation(loc) && loc !== 'DeathCamp'" class="largest-badge">
           <span class="badge-icon">👑</span>
           <span class="badge-text">양 투표 가능</span>
         </div>
@@ -31,7 +32,7 @@
             v-for="p in getPlayersInLocation(loc)" 
             :key="p.id"
             class="player-avatar"
-            :class="{ 'is-me': p.id === myPlayerId }"
+            :class="{ 'is-me': p.id === myPlayerId, 'is-dead': !p.alive }"
             :title="p.nickname"
           >
             <span class="avatar-emoji">{{ getPlayerIcon(p) }}</span>
@@ -71,7 +72,7 @@ const gameStore = useGameStore();
 const playerStore = usePlayerStore();
 const roomStore = useRoomStore();
 
-const locations = ['Lobby', 'Forest', 'Field', 'River', 'Sky'];
+const locations = ['Sky', 'River', 'Mountain', 'DeathCamp'];
 
 const myLocation = computed(() => playerStore.location);
 const myPlayerId = computed(() => playerStore.playerId);
@@ -79,49 +80,52 @@ const locationCounts = computed(() => gameStore.locationCounts);
 
 function getLocationClass(loc) {
   const classes = {
-    Lobby: 'location-lobby',
-    Forest: 'location-forest',
-    Field: 'location-field',
+    Sky: 'location-sky',
     River: 'location-river',
-    Sky: 'location-sky'
+    Mountain: 'location-mountain',
+    DeathCamp: 'location-death'
   };
   return classes[loc] || '';
 }
 
 function getLocationEmoji(loc) {
   const emojis = {
-    Lobby: '🏰',
-    Forest: '🌲',
-    Field: '🌾',
+    Sky: '☁️',
     River: '🌊',
-    Sky: '☁️'
+    Mountain: '⛰️',
+    DeathCamp: '💀'
   };
   return emojis[loc] || '📍';
 }
 
 function getLocationNameKo(loc) {
   const names = {
-    Lobby: '로비',
-    Forest: '숲',
-    Field: '들판',
+    Sky: '하늘',
     River: '강',
-    Sky: '하늘'
+    Mountain: '산',
+    DeathCamp: '사망자 수용소'
   };
   return names[loc] || loc;
 }
 
 function getPlayersInLocation(loc) {
-  return roomStore.players.filter(p => p.location === loc && p.alive);
+  // Show all players in location, alive or dead (if in DeathCamp)
+  return roomStore.players.filter(p => p.location === loc);
 }
 
 function isLargestLocation(loc) {
-  if (!locationCounts.value) return false;
-  const maxCount = Math.max(...Object.values(locationCounts.value));
+  if (!locationCounts.value || loc === 'DeathCamp') return false;
+  const validCounts = Object.entries(locationCounts.value)
+    .filter(([l]) => l !== 'DeathCamp')
+    .map(([, c]) => c);
+    
+  const maxCount = Math.max(...validCounts);
   return locationCounts.value[loc] === maxCount && maxCount > 0;
 }
 
 function getPlayerIcon(p) {
-  // Show role icon only for current player
+  // Show role icon only for current player or if dead/revealed?
+  // For now, only me.
   if (p.id === myPlayerId.value) {
     return getRoleIcon(playerStore.role);
   }
@@ -143,6 +147,7 @@ function getRoleIcon(role) {
 }
 
 function selectLocation(loc) {
+  if (loc === 'DeathCamp') return; // Cannot select death camp
   emit('update:selectedLocation', loc);
 }
 </script>
@@ -197,19 +202,9 @@ function selectLocation(loc) {
   transform: translateY(-4px) scale(1.02);
 }
 
-.location-lobby {
-  background: linear-gradient(135deg, #A0AEC0 0%, #718096 100%);
+.location-sky {
+  background: linear-gradient(135deg, #722ED1 0%, #391085 100%);
   color: white;
-}
-
-.location-forest {
-  background: linear-gradient(135deg, #52C41A 0%, #237804 100%);
-  color: white;
-}
-
-.location-field {
-  background: linear-gradient(135deg, #FADB14 0%, #D48806 100%);
-  color: #333;
 }
 
 .location-river {
@@ -217,9 +212,15 @@ function selectLocation(loc) {
   color: white;
 }
 
-.location-sky {
-  background: linear-gradient(135deg, #722ED1 0%, #391085 100%);
+.location-mountain {
+  background: linear-gradient(135deg, #52C41A 0%, #237804 100%);
   color: white;
+}
+
+.location-death {
+  background: linear-gradient(135deg, #434343 0%, #000000 100%);
+  color: #AAA;
+  cursor: default;
 }
 
 .location-header {
@@ -301,6 +302,11 @@ function selectLocation(loc) {
   background: rgba(255, 255, 255, 0.4);
   border-color: #FFD700;
   box-shadow: 0 0 16px rgba(255, 215, 0, 0.6);
+}
+
+.player-avatar.is-dead {
+  opacity: 0.7;
+  filter: grayscale(100%);
 }
 
 .avatar-emoji {

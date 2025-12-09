@@ -107,6 +107,33 @@ io.on('connection', (socket) => {
         });
     });
 
+    socket.on('debugFillRoom', ({ roomId }) => {
+        const room = rooms[roomId];
+        if (!room) return;
+
+        const currentCount = room.players.length;
+        const targetCount = 8;
+
+        for (let i = currentCount; i < targetCount; i++) {
+            const dummyId = `dummy_${Math.random().toString(36).substr(2, 9)}`;
+            room.players.push({
+                id: dummyId,
+                nickname: `Bot ${i + 1}`,
+                isHost: false,
+                role: null,
+                alive: true,
+                hunger: 0,
+                location: null
+            });
+        }
+
+        io.to(roomId).emit('roomUpdate', {
+            players: room.players,
+            roomName: room.name,
+            isPersistent: room.persistent
+        });
+    });
+
     socket.on('startGame', ({ roomId }) => {
         const room = rooms[roomId];
         if (!room) return;

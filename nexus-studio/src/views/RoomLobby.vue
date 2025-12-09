@@ -82,6 +82,16 @@
         </button>
       </div>
 
+      <!-- Debug Fill Button (Host Only) -->
+      <div v-if="isHost" class="text-center mt-4">
+        <button 
+          @click="debugFillRoom"
+          class="text-[#7B2FFF] text-sm px-4 py-2 rounded-lg border border-[#7B2FFF]/30 hover:bg-[#7B2FFF]/10 transition-colors"
+        >
+          🤖 Debug: Fill Room
+        </button>
+      </div>
+
       <!-- Waiting Message (Non-Host) -->
       <div v-else class="text-center glass-panel p-8 border-2 border-[#7B2FFF]/30">
         <div class="animate-pulse">
@@ -187,6 +197,10 @@ function fallbackCopyTextToClipboard(text) {
 
 function startGame() {
   socket.emit('startGame', { roomId: roomId.value, gameType: selectedGame.value });
+}
+
+function debugFillRoom() {
+  socket.emit('debugFillRoom', { roomId: roomId.value });
 }
 
 function handleNicknameSubmit(nickname) {
